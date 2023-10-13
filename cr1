@@ -1,0 +1,203 @@
+import firebase_admin
+from firebase_admin import credentials
+from firebase_admin import db
+
+import random
+import time
+from datetime import datetime
+import requests
+from bs4 import BeautifulSoup
+import bs4
+
+from selenium import webdriver
+from selenium import common
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from selenium import webdriver
+from selenium.webdriver.chrome.service import Service
+from webdriver_manager.chrome import ChromeDriverManager
+from selenium.webdriver.support.wait import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.common.by import By
+from selenium.webdriver.common.keys import Keys
+from PIL import Image
+import io
+
+#셀레니움 4버전 적용
+
+
+def croll_naverspace_map(kwString):
+    driver = webdriver.Chrome()
+    driver.get('https://www.naver.com')
+
+    query = driver.find_element(By.ID,'query')
+
+    #검색창 초기화
+    query.clear()
+    query.send_keys(kwString)
+    #검색버튼 클릭
+    driver.find_element(By.CLASS_NAME,"btn_search").click()
+    html = requests.get(driver.current_url)
+    soup = html.text
+    soup = bs4.BeautifulSoup(soup,'html.parser')
+    for href in soup.find("div", class_="api_more_wrap").find_all("a"): # a테그 찾기
+        driver.get(href["href"])   #a테그에 있는링크를 화면으로 변경 
+    #장소 이름만 가지고 오기
+    #https://map.naver.com/p/search/%EB%8C%80%EC%A0%84%EC%B9%B4%ED%8E%98?c=10.00,0,0,0,dh  로드된 페이지
+    Url = driver.current_url
+    html = requests.get(Url)
+
+    driver.switch_to.frame('searchIframe')
+    html =driver.page_source
+    soup = bs4.BeautifulSoup(html,'html.parser')
+    soupout = soup.text
+    soup = bs4.BeautifulSoup(soupout,'html.parser')
+    soup.find(By.ID,"_pcmap_list_scroll_container").select('li').source
+    driver.switch_to.default_content()
+    
+def croll_naver_surchkw_view_model(kwString): #str / 뷰 모델 크롤링
+    driver = webdriver.Chrome()
+    driver.get('https://www.naver.com')
+
+    query = driver.find_element(By.ID,'query')
+
+    #검색창 초기화
+    query.clear()
+    query.send_keys(kwString)
+    #검색버튼 클릭
+    driver.find_element(By.CLASS_NAME,"btn_search").click()
+    html = requests.get(driver.current_url)
+    soup = html.text
+    soup = bs4.BeautifulSoup(soup,'html.parser')
+    #검색 완료
+    li_space = []
+    space_more_url = []
+    for href in soup.find_all("div", class_="api_more_wrap"): # a테그 찾기
+        li_space.append(href) #찾은div태그 리스트에 저장
+        #파싱해서 링크찾기
+        print(str(href['href']))
+    for k in range(len(li_space)):  #스페이스 갯수,스페이스 이름
+        space = bs4.BeautifulSoup(str(li_space[k]),'html.parser')
+        print(space.find('a').text)
+        #'더보기' 문자열 제거
+        stringdata = space.find('a').text
+        space_more_url.append(stringdata)
+        
+        
+        
+
+
+
+    '''
+    for j in li:
+        listr = str(j)
+        print('타입 : '+str(type(listr)))
+        print('변환된 텍스트 : ' + listr)
+        soup = bs4.BeautifulSoup(listr,'html.parser')
+        for k in soup.find_all("a"):
+            print(k["href"])
+    ''' 
+        
+
+
+    #뷰 모델 화면 이동
+    
+
+
+def naver_cloudmap_data():
+    # NCP 콘솔에서 복사한 클라이언트ID와 클라이언트Secret 값
+    client_id = "dziw6i0qmi"
+    client_secret = "azfExcQpAN4whD8oZglZFqQNNKFl21jQxPKojrRX"
+
+    # 좌표 (경도, 위도)
+    endpoint = "https://naveropenapi.apigw.ntruss.com/map-static/v2/raster"
+    headers = {
+        "X-NCP-APIGW-API-KEY-ID": client_id,
+        "X-NCP-APIGW-API-KEY": client_secret,
+    }
+    # 중심 좌표
+    lon, lat = "127.020326886309", "37.5164324582415"
+    _center = f"{lon},{lat}"
+    # 줌 레벨 - 0 ~ 20
+    _level = 16
+    # 가로 세로 크기 (픽셀)
+    _w, _h = 500, 300
+    # 지도 유형 - basic, traffic, satellite, satellite_base, terrain
+    _maptype = "satellite"
+    # 반환 이미지 형식 - jpg, jpeg, png8, png
+    _format = "png"
+    # 고해상도 디스펠레이 지원을 위한 옵션 - 1, 2
+    _scale = 1
+    # 마커
+    _markers = f"""type:d|size:mid|pos:{lon} {lat}|color:red"""
+    # 라벨 언어 설정 - ko, en, ja, zh
+    _lang = "ko"
+    # 대중교통 정보 노출 - Boolean
+    _public_transit = True
+    # 서비스에서 사용할 데이터 버전 파라미터 전달 CDN 캐시 무효화
+    _dataversion = ""
+
+    # URL
+    url = f"{endpoint}?center={_center}&level={_level}&w={_w}&h={_h}&maptype={_maptype}&format={_format}&scale={_scale}&markers={_markers}&lang={_lang}&public_transit={_public_transit}&dataversion={_dataversion}"
+    res = requests.get(url, headers=headers)
+    res2 = requests.get()
+    driver = webdriver.Chrome()
+    print('인풋 : '+ res2)
+        
+
+
+
+
+
+
+def firebase():
+    
+    cred = credentials.Certificate('softoasis-763c2-firebase-adminsdk-lhap2-28da23a1b3.json')
+
+    firebase_admin.initialize_app(cred,{
+    'databaseURL' : 'https://softoasis-763c2-default-rtdb.firebaseio.com/'
+    #'databaseURL' : '데이터 베이스 url'
+    })
+
+    oderdataaction = db.reference('샘플 데이터') #서버 컨트롤 onoff코드
+    '''
+    inputdata는 현재 데이터 레퍼런스에 따라 변경
+    크롤링 검색 대상 페이지 : 네이버 , 페이스북 , 인스타 
+
+    이미지인식 코드 API 코드 검색 또는 네이버 이미지검색 크롤링 사용
+    네이버 플레이스 검색 후 메뉴 내용 사진 등 디비에 저장
+    
+    '''
+
+    oderdataaction.child("inputdata").child("크롤링").child('네이버 맛집').child('대전')
+
+    oderdataaction.child("inputdata").child("크롤링").child('네이버').child('블로그')
+    
+    oderdataaction.child('')
+    
+    '''
+    지역
+    이름
+    메뉴
+    
+    최신 블로그 내용
+    셋팅 코드
+    1네이버 페이지 로딩
+    2카페 검색(클릭이벤트 처리)
+    3
+    자동 로직 코드 
+    '''
+
+'''
+엑셀 파일 읽고 스트링 리스트 선언
+'''
+f = ['대구카페','대전카페']
+
+
+
+'''
+for i in f:
+    croll_naverspace_map(i) #네이버키워드 맵 검색 기능
+'''
+
+croll_naver_surchkw_view_model('대전카페')
