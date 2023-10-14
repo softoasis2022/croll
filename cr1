@@ -3,9 +3,6 @@ from firebase_admin import credentials
 from firebase_admin import db
 
 from datetime import datetime
-
-
-
 import random
 import time
 from datetime import datetime
@@ -34,30 +31,6 @@ firebase_admin.initialize_app(cred,{
 #'databaseURL' : '데이터 베이스 url'
 })
 
-
-def croll_naverspace_map(): #off
-    
-    for i in f:
-        driver = webdriver.Chrome()
-        driver.get('https://www.naver.com')
-
-        query = driver.find_element(By.ID,'query')
-
-        #검색창 초기화
-        query.clear()
-        query.send_keys(i + '카페')
-        #검색버튼 클릭
-        driver.find_element(By.CLASS_NAME,"btn_search").click()
-        html = requests.get(driver.current_url)
-        soup = html.text
-        soup = bs4.BeautifulSoup(soup,'html.parser')
-        for href in soup.find("div", class_="api_more_wrap").find_all("a"): # a테그 찾기
-            driver.get(href["href"]) #a테그에 있는링크를 화면으로 변경 
-        #장소 이름만 가지고 오기
-        #https://map.naver.com/p/search/%EB%8C%80%EC%A0%84%EC%B9%B4%ED%8E%98?c=10.00,0,0,0,dh  로드된 페이지
-        html = requests.get(driver.current_url)
-        print(html.text)
-
 def croll_naver_surchkw_view_model(kwString): #str / 뷰 모델 크롤링
     driver = webdriver.Chrome()
     driver.get('https://www.naver.com')
@@ -70,9 +43,9 @@ def croll_naver_surchkw_view_model(kwString): #str / 뷰 모델 크롤링
     #검색버튼 클릭
     driver.find_element(By.CLASS_NAME,"btn_search").click()
     html = requests.get(driver.current_url)
-    soup = html.text
-    soup = bs4.BeautifulSoup(soup,'html.parser')
+    soup = bs4.BeautifulSoup(html.text,'html.parser')
     #검색 완료
+    plusKw(driver.current_url)
     url = []
     urltext = []
     for href1 in soup.find_all("div",class_ = 'api_more_wrap'): # 테그 찾기
@@ -82,11 +55,22 @@ def croll_naver_surchkw_view_model(kwString): #str / 뷰 모델 크롤링
         if(urlstring[0] != "?" and urlstring[0] != "#"):
             url.append(urlstring)
             urltext.append(soup1.text)
-        '''
-        print(soup1.text)
-        print(urlstring)
-        '''
-    for href2 in soup.find("section","sc_new sp_nkeyword"):
+    print(len(url))
+    print(url)
+    for i in url:
+        sp1 = str(i).split('//')
+        if sp1[1][0] == 's':
+            searchpage_parse(i)
+        if sp1[1][0] == 'm':
+            mappagepage_parse(i)
+    
+def plusKw(url):
+    driver = webdriver.Chrome()
+    driver.get(url)
+    html = requests.get(url)
+    soup = bs4.BeautifulSoup(html.text,'html.parser')
+    
+    for href2 in soup.find("section","sc_new sp_nkeyword"):  #관련 키워드 섹션 찾기  #함수화 수정 예정
         page_text = str(href2)
         soup1 =bs4.BeautifulSoup(page_text,'html.parser')
         if(type(soup1) != type(None)):
@@ -96,43 +80,48 @@ def croll_naver_surchkw_view_model(kwString): #str / 뷰 모델 크롤링
                 htmlkw = soup2.find("div","tit")
                 if(type(htmlkw) != type(None)):
                     f2.append(htmlkw.text)
-                    print(htmlkw.text)
-                    firebase(htmlkw.text)
-        
-        
-    '''  
-    for k in range(len(li_space)):  #스페이스 갯수,스페이스 이름
-        space = bs4.BeautifulSoup(str(li_space[k]),'html.parser')
-        print(space.find('a').text)
-        #'더보기' 문자열 제거
-        stringdata = space.find('a').text
-        space_more_url.append(stringdata)
-    '''
+                    firebase('키워드',htmlkw.text)
 
-    '''
-    for j in li:
-        listr = str(j)
-        print('타입 : '+str(type(listr)))
-        print('변환된 텍스트 : ' + listr)
-        soup = bs4.BeautifulSoup(listr,'html.parser')
-        for k in soup.find_all("a"):
-            print(k["href"])
-    ''' 
-
-def firebase(kw):
+def firebase(state,kw):
     firebaseref = db.reference('main') #서버 컨트롤 onoff코드
-    firebaseref.child('키워드').push().set(kw)
+    if (state == '키워드'):
+        firebaseref.child(state).push().set(kw)
+    elif(state == 'blogtext'):
+        firebaseref.child(state).push().set(kw)
+    else:
+        firebaseref.child('new info').child(state).push().set(kw) # 다른 데이터 일경우 새로 저장
+def searchpage_parse(url):
+    print('검색 페이지 파싱')
+    print(url)
+    driver = webdriver.Chrome()
+    driver.get(url)
+    html = requests.get(url)
+    soup = bs4.BeautifulSoup(html.text,'html.parser')
+    if(TypeError(soup.find("div","keyword_challenge_wrap").find_all('div','title_area'))):
+        return
 
+    space = soup.find("div","keyword_challenge_wrap")
+    if(space.find_all('div','title_area') != type(None)):
+        for blog in space.find_all('div','title_area'):
+            #space.find_all('div','title_area')
+            if (type(space.find_all('div','title_area')) != type(None)):
+                html = str(blog)
+                soup = bs4.BeautifulSoup(html,'html.parser')
+                te = soup.find('a')
+                print(te.text)
+                if te.text[0] != '[':
+                    firebase('blogtext',te.text)
+    else:
+        print('d')
+def mappagepage_parse(url):
+    print('맵 페이지 파싱')
 
-f1= ['카페']
+f1= ['대구카페']
 f2 = []
 
 while(f1 != None):
     for input_kw in f1:
         croll_naver_surchkw_view_model(input_kw)
-        f1.remove(input_kw)
-    f1=f2
-
-    # f1 키워드 삭제 코드
-    
+    f1=f2 # f1 키워드
+    print(f1)
     
