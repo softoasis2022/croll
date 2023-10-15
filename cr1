@@ -1,3 +1,5 @@
+import socket
+
 import firebase_admin
 from firebase_admin import credentials
 from firebase_admin import db
@@ -22,6 +24,22 @@ from selenium.webdriver.support.wait import WebDriverWait
 from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+
+
+import time
+import sys 
+import os 
+
+import pandas as pd
+import numpy as np
+
+from selenium import webdriver 
+import chromedriver_autoinstaller
+from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.common.action_chains import ActionChains
+
+import warnings
+warnings.filterwarnings('ignore')
 #셀레니움 4버전 적용
 
 cred = credentials.Certificate('softoasis-763c2-firebase-adminsdk-lhap2-28da23a1b3.json')
@@ -55,14 +73,12 @@ def croll_naver_surchkw_view_model(kwString): #str / 뷰 모델 크롤링
         if(urlstring[0] != "?" and urlstring[0] != "#"):
             url.append(urlstring)
             urltext.append(soup1.text)
-    print(len(url))
-    print(url)
     for i in url:
         sp1 = str(i).split('//')
         if sp1[1][0] == 's':
             searchpage_parse(i)
         if sp1[1][0] == 'm':
-            mappagepage_parse(i)
+            mappagepage_parse(driver.current_url)
     
 def plusKw(url):
     driver = webdriver.Chrome()
@@ -88,40 +104,65 @@ def firebase(state,kw):
         firebaseref.child(state).push().set(kw)
     elif(state == 'blogtext'):
         firebaseref.child(state).push().set(kw)
+    elif(state == 'market'):
+        for i in firebaseref.child(state).get():
+            if firebaseref.child(state).child(i).get() == state:
+                return
+        firebaseref.child(state).push().set(kw)
     else:
         firebaseref.child('new info').child(state).push().set(kw) # 다른 데이터 일경우 새로 저장
 def searchpage_parse(url):
     print('검색 페이지 파싱')
-    print(url)
     driver = webdriver.Chrome()
     driver.get(url)
     html = requests.get(url)
     soup = bs4.BeautifulSoup(html.text,'html.parser')
-    if(TypeError(soup.find("div","keyword_challenge_wrap").find_all('div','title_area'))):
-        return
-
     space = soup.find("div","keyword_challenge_wrap")
-    if(space.find_all('div','title_area') != type(None)):
+    # 타입 에러 확인 
+    try:
         for blog in space.find_all('div','title_area'):
             #space.find_all('div','title_area')
             if (type(space.find_all('div','title_area')) != type(None)):
                 html = str(blog)
                 soup = bs4.BeautifulSoup(html,'html.parser')
                 te = soup.find('a')
-                print(te.text)
                 if te.text[0] != '[':
                     firebase('blogtext',te.text)
-    else:
-        print('d')
+    except:
+        search_in(url)
 def mappagepage_parse(url):
     print('맵 페이지 파싱')
+    driver = webdriver.Chrome()
+    driver.get(url)
+    html = requests.get(url)
+    soup = bs4.BeautifulSoup(html.text,'html.parser')
+    for i in soup.find_all("section","sc_new b8k1d"):
+        soup = bs4.BeautifulSoup(str(i),'html.parser')
+        for j in soup.find_all("div","N_KDL"):
+            soup = bs4.BeautifulSoup(str(j),'html.parser')
+            name = soup.find("span")
+            print(name.text)
+            firebase('market',name.text)
+            
+    
+    
+    
+    
+def search_in(url):  #지식인 파싱
+    print('지식인 페이지 파싱')
+    firebase('search_in ',url)
 
-f1= ['대구카페']
+
+f1= ['베이커리카페']
 f2 = []
 
-while(f1 != None):
+
+ipaddress=socket.gethostbyname(socket.gethostname())
+while((f1 != None) and (socket.gethostbyname(socket.gethostname()) != '')):
+    
     for input_kw in f1:
         croll_naver_surchkw_view_model(input_kw)
-    f1=f2 # f1 키워드
+    #f1=f2 # f1 키워드
+    f1 = f2
     print(f1)
     
