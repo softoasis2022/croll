@@ -220,7 +220,7 @@ def influencer(url):
 def firebase2(state,url):
     firebaseref = db.reference('main') #서버 컨트롤 onoff코드
     if state == "인플루언서":
-        firebaseref.child("System").child(state).
+        firebaseref.child("System").child(state).get()
 #새로운 로직
 '''
 1. 검새 후 검색버튼 리스트별 페이지 접속 
