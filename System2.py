@@ -48,6 +48,8 @@ firebase_admin.initialize_app(cred,{
 #'databaseURL' : '데이터 베이스 url'
 })
 
+store = []
+store_address = []
 
 def System(kwString):
     driver = webdriver.Chrome()
@@ -71,34 +73,111 @@ def System(kwString):
             soup = bs4.BeautifulSoup(str(j),'html.parser')
             soup = soup.find("a")
             print(soup.text)
-            if (soup['href'][0]== '?'):
-                url = "https://search.naver.com/search.naver" + soup['href']
-                print("url : " + url)
-                if soup.text == '인플루언서':
-                    influencer(url)
+            print(soup["href"])
+
+            #보안 완전체가 아닌 링크는 전환 해서 사용 예시) 인플루언서,뉴스,쇼핑 / 사용하지 않는 링크는 아래에 주석 처리
+            if (soup.text == '지도'):
+                mapsearch(soup["href"])
+            '''
+            elif (soup.text == '인플루언서'):
+                url = "https://search.naver.com/search.naver"+ soup["href"]
+                print(url)
+                influencer(url)
+            elif(soup.text == 'VIEW'):
+                print("https://search.naver.com/search.naver" + soup["href"] )
             else :
-                print(soup['href'])
+                print("전환 하지 않은 링크"+soup["href"])
+            elif (soup.text == '뉴스'):
+                url = "https://search.naver.com/search.naver" + soup["href"]
+                print(url)
+            elif (soup.text == '어학사전'):
+                print(soup["href"])
+            elif (soup.text == '도서'):
+                print(soup["href"])
+            elif (soup.text == '쇼핑'):
+                print("https://search.shopping.naver.com/search/all" +soup["href"])
+            '''
+            
 
 def plusKw(url):
     driver = webdriver.Chrome()
     driver.get(url)
+    time.sleep(10)
     html = requests.get(url)
     soup = bs4.BeautifulSoup(html.text,'html.parser')
-    try:
-        for href2 in soup.find("section","sc_new sp_nkeyword"):  #관련 키워드 섹션 찾기  #함수화 수정 예정
-            page_text = str(href2)
-            soup1 =bs4.BeautifulSoup(page_text,'html.parser')
-            if(type(soup1) != type(None)):
-                for kw in soup1.find_all("a"):
-                    space_kw = str(kw)
-                    soup2 =bs4.BeautifulSoup(space_kw,'html.parser')
-                    htmlkw = soup2.find("div","tit")
-                    if(type(htmlkw) != type(None)):
-                        f2.append(htmlkw.text)
-                        firebase2('키워드',htmlkw.text)
-    except:
-        print("d")
-                
+    for i in soup.find_all("section","sc_new sp_related"):
+        soup = bs4.BeautifulSoup(str(i),'html.parser')
+        for j in soup.find_all("div","tit"):
+            soup = bs4.BeautifulSoup(str(j),'html.parser')
+            f2.append(soup.text)
+    print(f2)
+
+
+def mapsearch(url):
+    driver = webdriver.Chrome()
+    driver.get(url)
+    print(url)
+    time.sleep(4) #네이버 웹플레이스 에서는페이지가 로드되고 정보를 받아오는 형식이기 때문에 대기 시간이 필요 하다 / 디바이스인터넷 속도가 다르므로 디바이스 속도를 판단하여 재 구성 해야 한다
+    # "searchIframe" iframe을 찾기
+    iframe = driver.find_element(By.ID,"searchIframe")
+    # iframe 내부로 전환
+    driver.switch_to.frame(iframe)
+    # iframe 내부의 HTML을 가져오기
+    html = driver.page_source
+    soup = BeautifulSoup(html, "html.parser")
+    for i in soup.find_all("div","Ryr1F"):
+        soup = BeautifulSoup(str(i), "html.parser")
+        for j in soup.find_all("li"):
+            soup = BeautifulSoup(str(j), "html.parser")
+            soup = soup.find_all("a","P7gyV")
+            soup = BeautifulSoup(str(soup), "html.parser")
+            for k in soup.find_all("span","place_bluelink YwYLL"):
+                soup = BeautifulSoup(str(k), "html.parser")
+                store.append(soup.text)
+    for search_store in store:
+        print("스토어 이름 : "+search_store)
+        menu = []
+        driver.get('https://www.naver.com')
+        query = driver.find_element(By.ID,'query')
+        #검색창 초기화
+        query.clear()
+        query.send_keys(search_store)
+        #검색버튼 클릭
+        driver.find_element(By.CLASS_NAME,"btn_search").click()
+        time.sleep(3)
+        html = requests.get(driver.current_url)
+        soup = bs4.BeautifulSoup(html.text,'html.parser')
+        for sc1 in soup.find_all("section"):
+            soup = bs4.BeautifulSoup(str(sc1),'html.parser')
+            soup_storeinfo = bs4.BeautifulSoup(str(sc1),'html.parser')
+            for sc2 in soup.find_all("div","YouOG"):
+                soup = bs4.BeautifulSoup(str(sc2),'html.parser')
+                for sc3 in soup.find_all("span","Fc1rA"):
+                    if soup.find("span").text == search_store:
+                        for store_info in soup_storeinfo.find_all("div","place_section no_margin"):
+                            soup = bs4.BeautifulSoup(str(store_info),'html.parser')
+                            for find_info in soup.find_all("span","LDgIH"):
+                                soup = bs4.BeautifulSoup(str(find_info),'html.parser')
+                                print("주소 : "+soup.find("span").text)
+                                store_address.append(soup.find("span").text)
+                                address = soup.find("span").text
+            for menu in soup_storeinfo:
+                menusc1 = bs4.BeautifulSoup(str(menu),'html.parser')
+                for menulistspace in menusc1.find_all("div","place_section no_margin yX5qs"):
+                    soup = bs4.BeautifulSoup(str(menulistspace),'html.parser')
+                    for menuurl in soup.find_all("ul","Pi3tE"):
+                        soup = bs4.BeautifulSoup(str(menuurl),'html.parser')
+                        for menulist in soup.find_all("li"):
+                            soup = bs4.BeautifulSoup(str(menulist),'html.parser')
+                            for menuname in soup.find_all("span","VQvNX"):
+                                soup = bs4.BeautifulSoup(str(menuname),'html.parser')
+                                print(soup.text)
+            
+            
+            #https://pcmap.place.naver.com/place/1614953667/bookingDeliveryItem?from=map&fromPanelNum=1&x=127.0398016&y=37.5267821&timestamp=202311081917
+                        #place_section no_margin
+                        
+
 def influencer(url):
     driver = webdriver.Chrome()
     driver.get(url)
@@ -114,9 +193,9 @@ def influencer(url):
                 for influencer_info in soup.find_all("span"):
                     soup = bs4.BeautifulSoup(str(influencer_info),'html.parser')
                     infl.append(soup.text)
-                firebase2("인플루언서",infl)
+                FB_crollsearch("인플루언서",infl)
 
-def firebase2(state,info):
+def FB_crollsearch(state,info):
     firebaseref = db.reference('main') #서버 컨트롤 onoff코드
     if(state == '인플루언서'):
         now = "2023-10-19"
@@ -129,6 +208,12 @@ def firebase2(state,info):
     else:
         print("데이터가 없습니다")
 
+def FB_storeinfo(datastate,storename,address,data):
+    firebaseref = db.reference('main') #서버 컨트롤 onoff코드
+    if datastate == "스토어":
+        firebaseref.child(datastate).child(storename).child("주소").set(address)
+        firebaseref.child(datastate).child(storename).child("메뉴").set(data)
+
 
 f1= ['인스타카페']
 f2 = []
@@ -140,5 +225,7 @@ while((f1 != None) and (socket.gethostbyname(socket.gethostname()) != '')):
     for input_kw in f1:
         #roll_naver_surchkw_view_model(input_kw)
         System(input_kw)
-    f1=f2
+    f1.clear()
+    #f1=f2
+
     
