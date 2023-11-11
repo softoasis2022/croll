@@ -48,10 +48,7 @@ firebase_admin.initialize_app(cred,{
 #'databaseURL' : '데이터 베이스 url'
 })
 
-store = []
-store_address = []
-
-def System(kwString):
+def System(kwString): 
     driver = webdriver.Chrome()
     driver.get('https://www.naver.com')
 
@@ -111,13 +108,12 @@ def plusKw(url):
             soup = bs4.BeautifulSoup(str(j),'html.parser')
             f2.append(soup.text)
     print(f2)
-
-
 def mapsearch(url):
     driver = webdriver.Chrome()
     driver.get(url)
     print(url)
-    time.sleep(4) #네이버 웹플레이스 에서는페이지가 로드되고 정보를 받아오는 형식이기 때문에 대기 시간이 필요 하다 / 디바이스인터넷 속도가 다르므로 디바이스 속도를 판단하여 재 구성 해야 한다
+    store = []
+    time.sleep(7) #네이버 웹플레이스 에서는페이지가 로드되고 정보를 받아오는 형식이기 때문에 대기 시간이 필요 하다 / 디바이스인터넷 속도가 다르므로 디바이스 속도를 판단하여 재 구성 해야 한다
     # "searchIframe" iframe을 찾기
     iframe = driver.find_element(By.ID,"searchIframe")
     # iframe 내부로 전환
@@ -125,15 +121,24 @@ def mapsearch(url):
     # iframe 내부의 HTML을 가져오기
     html = driver.page_source
     soup = BeautifulSoup(html, "html.parser")
-    for i in soup.find_all("div","Ryr1F"):
-        soup = BeautifulSoup(str(i), "html.parser")
-        for j in soup.find_all("li"):
-            soup = BeautifulSoup(str(j), "html.parser")
-            soup = soup.find_all("a","P7gyV")
-            soup = BeautifulSoup(str(soup), "html.parser")
-            for k in soup.find_all("span","place_bluelink YwYLL"):
-                soup = BeautifulSoup(str(k), "html.parser")
-                store.append(soup.text)
+    for store_space in soup.find_all("div","Ryr1F"):
+        soup = BeautifulSoup(str(store_space), "html.parser")
+        for store_info_space in soup.find_all("li","VLTHu OW9LQ"):
+            soup = BeautifulSoup(str(store_info_space), "html.parser")
+            for store_info_sellect in soup.find_all("div","place_bluelink C6RjW"):
+                soup = BeautifulSoup(str(store_info_sellect), "html.parser")
+                store.append(soup.find("span","YwYLL").text)
+    store_search(store)
+    '''
+    1. 메뉴 이름 , 참고 사진 (네이버 사진 다운, n개 이상에 합쳐진 메뉴이름에서 마지막 이름을 메뉴 메인 이름으로 선정)
+    2. 1번을 제외한 앞 단어들은 서브 이름으로 선정
+    3. 
+    '''
+            
+    #https://pcmap.place.naver.com/place/1614953667/bookingDeliveryItem?from=map&fromPanelNum=1&x=127.0398016&y=37.5267821&timestamp=202311081917
+    #place_section no_margin
+def store_search(store):
+    driver = webdriver.Chrome()
     for search_store in store:
         print("스토어 이름 : "+search_store)
         menu = []
@@ -147,20 +152,25 @@ def mapsearch(url):
         time.sleep(3)
         html = requests.get(driver.current_url)
         soup = bs4.BeautifulSoup(html.text,'html.parser')
-        for sc1 in soup.find_all("section"):
-            soup = bs4.BeautifulSoup(str(sc1),'html.parser')
-            soup_storeinfo = bs4.BeautifulSoup(str(sc1),'html.parser')
-            for sc2 in soup.find_all("div","YouOG"):
-                soup = bs4.BeautifulSoup(str(sc2),'html.parser')
-                for sc3 in soup.find_all("span","Fc1rA"):
-                    if soup.find("span").text == search_store:
-                        for store_info in soup_storeinfo.find_all("div","place_section no_margin"):
-                            soup = bs4.BeautifulSoup(str(store_info),'html.parser')
-                            for find_info in soup.find_all("span","LDgIH"):
-                                soup = bs4.BeautifulSoup(str(find_info),'html.parser')
-                                print("주소 : "+soup.find("span").text)
-                                store_address.append(soup.find("span").text)
-                                address = soup.find("span").text
+        for sc1 in soup.find_all("section","sc_new"):
+            soup_sc1 = bs4.BeautifulSoup(str(sc1),'html.parser')
+            for find_address in soup_sc1.find_all("span","LDgIH"):
+                soup_find_address= bs4.BeautifulSoup(str(find_address),'html.parser')
+                address = soup_find_address.find("span").text
+            for find_menu in soup_sc1.find_all("div","Cycl8"):
+                soup_find_menu= bs4.BeautifulSoup(str(find_menu),'html.parser')
+                print(soup_find_menu)
+            '''
+            if soup.find("span").text == search_store:
+                for store_info in soup_storeinfo.find_all("div","place_section no_margin"):
+                    soup = bs4.BeautifulSoup(str(store_info),'html.parser')
+                    for find_info in soup.find_all("span","LDgIH"):
+                        soup = bs4.BeautifulSoup(str(find_info),'html.parser')
+                        print("주소 : "+soup.find("span").text)
+                        store_address.append(soup.find("span").text)
+                        address = soup.find("span").text
+            '''
+            '''
             for menu in soup_storeinfo:
                 menusc1 = bs4.BeautifulSoup(str(menu),'html.parser')
                 for menulistspace in menusc1.find_all("div","place_section no_margin yX5qs"):
@@ -171,11 +181,10 @@ def mapsearch(url):
                             soup = bs4.BeautifulSoup(str(menulist),'html.parser')
                             for menuname in soup.find_all("span","VQvNX"):
                                 soup = bs4.BeautifulSoup(str(menuname),'html.parser')
+                                menu.append(soup.text)
                                 print(soup.text)
-            
-            
-            #https://pcmap.place.naver.com/place/1614953667/bookingDeliveryItem?from=map&fromPanelNum=1&x=127.0398016&y=37.5267821&timestamp=202311081917
-                        #place_section no_margin
+            '''
+        FB_storeinfo("스토어",search_store,address,menu)
                         
 
 def influencer(url):
@@ -212,7 +221,8 @@ def FB_storeinfo(datastate,storename,address,data):
     firebaseref = db.reference('main') #서버 컨트롤 onoff코드
     if datastate == "스토어":
         firebaseref.child(datastate).child(storename).child("주소").set(address)
-        firebaseref.child(datastate).child(storename).child("메뉴").set(data)
+        for menu in data:
+            firebaseref.child(datastate).child(storename).child("메뉴").set(menu)
 
 
 f1= ['인스타카페']
@@ -226,6 +236,6 @@ while((f1 != None) and (socket.gethostbyname(socket.gethostname()) != '')):
         #roll_naver_surchkw_view_model(input_kw)
         System(input_kw)
     f1.clear()
-    #f1=f2
+    f1=f2
 
     
