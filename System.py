@@ -190,8 +190,7 @@ ipaddress=socket.gethostbyname(socket.gethostname())
 while((f1 != None) and (socket.gethostbyname(socket.gethostname()) != '')):
     
     for input_kw in f1:
-        #roll_naver_surchkw_view_model(input_kw)
-        System(input_kw)
+        croll_naver_surchkw_view_model(input_kw)
     f1=f2
     
 
