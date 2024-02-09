@@ -12,7 +12,7 @@ new_data = {
 }
 
 # 파일 경로 변경: D 드라이브로 변경
-filename = "D:/min/원두.xlsx"
+filename = "원두.xlsx"
 
 # 엑셀 파일 로드
 wb = load_workbook(filename)
