@@ -1,3 +1,10 @@
+'''
+
+네이버 일반검색 창에서 데이터 크롤링
+
+'''
+
+
 import time
 import requests
 
@@ -24,20 +31,15 @@ from selenium.webdriver.common.action_chains import ActionChains
 import warnings
 import pandas as pd
 
-'''
-메누 받아오기
-스토어 받아오기
-이미지 저장 하기
-상가 발품 받아오기
-
-'''
-
 url = "https://www.naver.com/"
 
 driver = webdriver.Chrome()
 driver.get(url)
 
 query = driver.find_element(By.ID,'query')
+
+#검색데이터 초기화 : 제품이름, 가격, 배송비, 
+data = {}
 
 #검색창 초기화
 query.clear()
