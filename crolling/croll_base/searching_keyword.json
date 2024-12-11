@@ -1,0 +1,15 @@
+{
+    "naver" : {
+        "keywordlist" : [
+            "nomal", "special"
+        ],
+        "keyword" : {
+            "nomal" : [
+                "커피","카페"
+            ],
+            "special" : [
+                "맛집"
+            ]
+        }
+    }
+}

@@ -1,0 +1,17 @@
+{
+    "commet" : "드라이브저장 모드 설정 json , localdrive는 로컬 디스크에 저장 , webdrive는 클라우드 저장",
+    "mode" : "localdrive",
+    "localdrive" : {
+        "drive" : [
+            "C","D","F","W"
+        ],
+        "root" : {
+            
+        }
+    },
+    "webdrive" : {
+        "firebase" : "",
+        "naver" : ""
+    }
+    
+}
